@@ -4,9 +4,9 @@ A fully functional Omegle clone made for group chats, Where you can maintain ano
 Steps to install dependencies and run the app:
 In the terminal type the following commands:
 
-1. cd node
+1. "cd node"
 
-2. npm install
+2. "npm install"
 
 3. Either use "nodemon" in the node directory
 (To globally install nodemon use: "npm install -g nodemon")
