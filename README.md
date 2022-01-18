@@ -1,5 +1,5 @@
 # ChatApp
-A fully functional Omegle clone made for group chats, Where you can maintain anonymity and talk to 'n' number of people simultaneously. 
+Realtime Chat Application, A fully functional Omegle clone made for group chats, Where you can maintain anonymity and talk to 'n' number of people simultaneously. 
 **********************************************
 Steps to install dependencies and run the app:
 In the terminal type the following commands:
@@ -14,4 +14,6 @@ or
 Run "index.js" using code runner extension in vscode.
 
 4. Run "index.html" in your browser.
+
+Run as many chrome instances you want simultaneously, to check the functionality
 
