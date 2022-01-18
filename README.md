@@ -13,5 +13,5 @@ In the terminal type the following commands:
 or
 Run "index.js" using code runner extension in vscode.
 
-4.Run "index.html" in your browser.
+4. Run "index.html" in your browser.
 
