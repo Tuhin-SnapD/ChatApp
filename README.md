@@ -9,7 +9,7 @@ In the terminal type the following commands:
 2. `npm install`
 
 3. Either use `nodemon` in the node directory
-(To globally install nodemon use: "npm install -g nodemon")
+(To globally install nodemon use: `npm install -g nodemon`)
 or
 Run "index.js" using code runner extension in vscode.
 
