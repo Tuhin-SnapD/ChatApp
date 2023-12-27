@@ -1,5 +1,3 @@
-Certainly! Here is the content in a plain text format:
-
 ```
 # ChatApp: Realtime Group Chat Application
 
