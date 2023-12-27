@@ -1,11 +1,10 @@
-```
 # ChatApp: Realtime Group Chat Application
 
-Welcome to ChatApp, a dynamic and fully functional group chat application inspired by Omegle. This platform enables users to engage in anonymous conversations with 'n' number of people simultaneously, offering an exciting and interactive chatting experience.
+ChatApp is a fully functional Omegle clone designed for engaging group conversations while maintaining user anonymity. With the ability to connect with 'n' number of people simultaneously, this application offers an exciting and dynamic chat experience.
 
 ## Installation Guide
 
-Follow these steps to set up ChatApp on your local machine:
+Follow these steps to install dependencies and run the ChatApp:
 
 ### 1. Navigate to the Node Directory
 
@@ -17,7 +16,7 @@ cd node
 
 ### 2. Install Dependencies
 
-Run the following command to install the necessary dependencies:
+Run the following command to install the required dependencies:
 
 ```bash
 npm install
@@ -25,7 +24,7 @@ npm install
 
 ### 3. Choose a Run Method
 
-#### Using Nodemon (Recommended):
+#### Using Nodemon (recommended):
 
 If you don't have `nodemon` installed globally, you can install it by running:
 
@@ -45,11 +44,10 @@ If you are using Visual Studio Code, you can use the Code Runner extension to ru
 
 ### 4. Open in Browser
 
-Launch your preferred web browser and open the "index.html" file to access the ChatApp.
+Run "index.html" in your preferred web browser to launch the ChatApp.
 
 ### 5. Simultaneous Testing
 
 To test the functionality, open multiple instances of the application in Google Chrome or any other browser.
 
 Enjoy the seamless and anonymous group chat experience provided by ChatApp!
-```
