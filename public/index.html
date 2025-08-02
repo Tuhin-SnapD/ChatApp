@@ -5,27 +5,65 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Chat App- Using Node Socket.io</title>
-    <script defer src="/socket.io/socket.io.js"></script>
+    <title>Modern Chat App - Real-time Messaging</title>
+    <script defer src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script defer src="js/client.js"></script>
     <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 
 <body>
-    <div class="chat-box">
-        <nav>
-            <img src="https://cdn-icons-png.flaticon.com/512/1239/1239020.png" alt="icon" class="logo">
-            <h1>Welcome to My Chat App</h1>
-        </nav>
-        <div class="container">
-            <!-- Messages will be added here dynamically -->
+    <!-- Name Input Modal -->
+    <div id="nameModal" class="modal" style="display: flex;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <img src="https://cdn-icons-png.flaticon.com/512/733/733585.png" alt="Chat App Icon" class="modal-logo">
+                <h2>Welcome to Chat App</h2>
+            </div>
+            <div class="modal-body">
+                <p>Enter your name to start chatting with others in real-time</p>
+                <form id="nameForm">
+                    <input type="text" id="nameInput" placeholder="Enter your name..." required autocomplete="off">
+                    <button type="submit" class="modal-btn">
+                        <span>Join Chat</span>
+                        <span>→</span>
+                    </button>
+                </form>
+            </div>
         </div>
+    </div>
 
-        <div class="send">
-            <form action="#" id="send-container">
-                <input type="text" name="messageInp" id="messageInp" placeholder="Type your message...">
-                <button class="btn" type="submit">Send</button>
-            </form>
+    <div class="chat-box" id="chatBox" style="display: none;">
+        <nav>
+            <div class="nav-left">
+                <img src="https://cdn-icons-png.flaticon.com/512/733/733585.png" alt="Chat App Icon" class="logo">
+                <h1>Modern Chat App</h1>
+            </div>
+            <div class="nav-right">
+                <span class="connection-status">🟢 Connected</span>
+            </div>
+        </nav>
+        
+        <div class="main-content">
+            <!-- Sidebar will be dynamically added here by JavaScript -->
+            
+            <div class="chat-area">
+                <div class="container">
+                    <!-- Messages will be added here dynamically -->
+                </div>
+
+                <div class="send">
+                    <form action="#" id="send-container">
+                        <input type="text" name="messageInp" id="messageInp" placeholder="Type your message..." autocomplete="off">
+                        <button class="btn" type="submit">
+                            <span>Send</span>
+                            <span>📤</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
 </body>
