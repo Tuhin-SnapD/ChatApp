@@ -11,7 +11,8 @@
     <link rel="stylesheet" href="css/style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 
 <body>
@@ -19,16 +20,39 @@
     <div id="nameModal" class="modal" style="display: flex;">
         <div class="modal-content">
             <div class="modal-header">
-                <img src="https://cdn-icons-png.flaticon.com/512/733/733585.png" alt="Chat App Icon" class="modal-logo">
-                <h2>Welcome to Chat App</h2>
+                <div class="modal-logo-container">
+                    <i class="fas fa-comments"></i>
+                </div>
+                <h2>Welcome to ChatFlow</h2>
+                <p class="modal-subtitle">Connect with others in real-time</p>
             </div>
             <div class="modal-body">
-                <p>Enter your name to start chatting with others in real-time</p>
                 <form id="nameForm">
-                    <input type="text" id="nameInput" placeholder="Enter your name..." required autocomplete="off">
+                    <div class="input-group">
+                        <label for="nameInput">Choose your display name</label>
+                        <input type="text" id="nameInput" placeholder="Enter your name..." required autocomplete="off">
+                        <div class="input-icon">
+                            <i class="fas fa-user"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="name-suggestions">
+                        <p>Or pick a creative name:</p>
+                        <div class="suggestion-chips">
+                            <button type="button" class="suggestion-chip" data-name="Cosmic Explorer">Cosmic Explorer</button>
+                            <button type="button" class="suggestion-chip" data-name="Pixel Dreamer">Pixel Dreamer</button>
+                            <button type="button" class="suggestion-chip" data-name="Neon Wanderer">Neon Wanderer</button>
+                            <button type="button" class="suggestion-chip" data-name="Quantum Coder">Quantum Coder</button>
+                            <button type="button" class="suggestion-chip" data-name="Digital Nomad">Digital Nomad</button>
+                            <button type="button" class="suggestion-chip" data-name="Cyber Poet">Cyber Poet</button>
+                            <button type="button" class="suggestion-chip" data-name="Stellar Artist">Stellar Artist</button>
+                            <button type="button" class="suggestion-chip" data-name="Mystic Developer">Mystic Developer</button>
+                        </div>
+                    </div>
+                    
                     <button type="submit" class="modal-btn">
-                        <span>Join Chat</span>
-                        <span>→</span>
+                        <span>Start Chatting</span>
+                        <i class="fas fa-arrow-right"></i>
                     </button>
                 </form>
             </div>
@@ -38,8 +62,10 @@
     <div class="chat-box" id="chatBox" style="display: none;">
         <nav>
             <div class="nav-left">
-                <img src="https://cdn-icons-png.flaticon.com/512/733/733585.png" alt="Chat App Icon" class="logo">
-                <h1>Modern Chat App</h1>
+                <div class="logo-container">
+                    <i class="fas fa-comments"></i>
+                </div>
+                <h1>ChatFlow</h1>
             </div>
             <div class="nav-right">
                 <span class="connection-status">🟢 Connected</span>
@@ -56,10 +82,20 @@
 
                 <div class="send">
                     <form action="#" id="send-container">
-                        <input type="text" name="messageInp" id="messageInp" placeholder="Type your message..." autocomplete="off">
+                        <div class="input-wrapper">
+                            <input type="text" name="messageInp" id="messageInp" placeholder="Type your message..." autocomplete="off">
+                            <div class="input-actions">
+                                <button type="button" class="action-btn emoji-btn" title="Add emoji">
+                                    <i class="far fa-smile"></i>
+                                </button>
+                                <button type="button" class="action-btn file-btn" title="Attach file">
+                                    <i class="fas fa-paperclip"></i>
+                                </button>
+                            </div>
+                        </div>
                         <button class="btn" type="submit">
                             <span>Send</span>
-                            <span>📤</span>
+                            <i class="fas fa-paper-plane"></i>
                         </button>
                     </form>
                 </div>

@@ -19,6 +19,8 @@ let typingUsers = new Set();
 let messageReactions = new Map();
 let typingTimeout = null;
 let isConnected = false;
+let reconnectAttempts = 0;
+let maxReconnectAttempts = 5;
 
 // DOM elements
 let userListElement = null;
@@ -28,8 +30,19 @@ let connectionStatusElement = null;
 
 // Initialize everything when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    // Initialize Socket.IO
-    socket = io();
+    // Initialize Socket.IO with error handling
+    try {
+        socket = io({
+            reconnection: true,
+            reconnectionAttempts: maxReconnectAttempts,
+            reconnectionDelay: 1000,
+            timeout: 20000
+        });
+    } catch (error) {
+        console.error('Failed to initialize Socket.IO:', error);
+        showNotification('Failed to connect to server. Please refresh the page.', 'error');
+        return;
+    }
     
     // Initialize DOM elements
     form = document.getElementById('send-container');
@@ -39,6 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Check if required elements exist
     if (!form || !messageInput || !messageContainer) {
         console.error('Required DOM elements not found');
+        showNotification('Failed to initialize chat interface. Please refresh the page.', 'error');
         return;
     }
     
@@ -46,6 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
         audio = new Audio('https://www.soundjay.com/misc/sounds/bell-ringing-05.wav');
         audio.volume = 0.3; // Set volume to 30%
+        audio.preload = 'auto';
     } catch (error) {
         console.warn('Audio initialization failed:', error);
         audio = null;
@@ -61,6 +76,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Check if modal elements exist
     if (!nameModal || !nameForm || !nameInput || !chatBox) {
         console.error('Modal elements not found');
+        showNotification('Failed to initialize modal. Please refresh the page.', 'error');
         return;
     }
 
@@ -75,22 +91,40 @@ document.addEventListener('DOMContentLoaded', () => {
     // Update connection status when socket connects
     socket.on('connect', () => {
         isConnected = true;
+        reconnectAttempts = 0;
         updateConnectionStatus();
+        console.log('Connected to server');
     });
 
     socket.on('disconnect', () => {
         isConnected = false;
         updateConnectionStatus();
+        console.log('Disconnected from server');
     });
 
-    socket.on('reconnect', () => {
+    socket.on('reconnect', (attemptNumber) => {
         isConnected = true;
+        reconnectAttempts = 0;
         updateConnectionStatus();
+        showNotification('Reconnected to server!', 'success');
+        console.log('Reconnected to server');
+    });
+
+    socket.on('reconnect_attempt', (attemptNumber) => {
+        reconnectAttempts = attemptNumber;
+        updateConnectionStatus();
+        console.log(`Reconnection attempt ${attemptNumber}`);
+    });
+
+    socket.on('reconnect_failed', () => {
+        showNotification('Failed to reconnect. Please refresh the page.', 'error');
+        console.error('Failed to reconnect after maximum attempts');
     });
 
     socket.on('connect_error', (error) => {
         console.error('Connection error:', error);
         appendMessage('Connection error. Trying to reconnect...', 'system');
+        updateConnectionStatus();
     });
 });
 
@@ -100,12 +134,16 @@ const updateConnectionStatus = () => {
     
     if (isConnected) {
         connectionStatusElement.innerHTML = '🟢 Connected';
-        connectionStatusElement.style.background = 'rgba(16, 185, 129, 0.2)';
-        connectionStatusElement.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+        connectionStatusElement.className = 'connection-status connected';
+        connectionStatusElement.classList.add('connected');
     } else {
-        connectionStatusElement.innerHTML = '🔴 Disconnected';
-        connectionStatusElement.style.background = 'rgba(239, 68, 68, 0.2)';
-        connectionStatusElement.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+        if (reconnectAttempts > 0) {
+            connectionStatusElement.innerHTML = `🟡 Reconnecting... (${reconnectAttempts}/${maxReconnectAttempts})`;
+        } else {
+            connectionStatusElement.innerHTML = '🔴 Disconnected';
+        }
+        connectionStatusElement.className = 'connection-status disconnected';
+        connectionStatusElement.classList.add('disconnected');
     }
 };
 
@@ -185,14 +223,19 @@ const initializeUI = () => {
     fileInput.style.display = 'none';
     document.body.appendChild(fileInput);
     
-    const fileButton = document.createElement('button');
-    fileButton.type = 'button';
-    fileButton.className = 'btn file-btn';
-    fileButton.innerHTML = '📎';
-    fileButton.onclick = () => fileInput.click();
-    document.querySelector('#send-container').insertBefore(fileButton, document.querySelector('#send-container button'));
+    // File button is already in HTML, just add event listener
+    const fileButton = document.querySelector('.file-btn');
+    if (fileButton) {
+        fileButton.onclick = () => fileInput.click();
+    }
     
     fileInput.addEventListener('change', handleFileUpload);
+    
+    // Add emoji picker functionality
+    const emojiButton = document.querySelector('.emoji-btn');
+    if (emojiButton) {
+        emojiButton.onclick = showEmojiPicker;
+    }
     
     // Add reaction panel event listeners
     reactionPanelElement.addEventListener('click', (e) => {
@@ -204,9 +247,7 @@ const initializeUI = () => {
     });
 
     // Add welcome message
-    setTimeout(() => {
-        appendMessage('Welcome to the chat! Start typing to send a message.', 'system');
-    }, 500);
+    showWelcomeMessage();
     
     // Restore sidebar state from localStorage
     const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
@@ -235,10 +276,14 @@ const initializeEventListeners = () => {
             clearTimeout(typingTimeout);
         }
         
-        socket.emit('typing', { roomId: currentRoom, isTyping: true });
+        if (isConnected) {
+            socket.emit('typing', { roomId: currentRoom, isTyping: true });
+        }
         
         typingTimeout = setTimeout(() => {
-            socket.emit('typing', { roomId: currentRoom, isTyping: false });
+            if (isConnected) {
+                socket.emit('typing', { roomId: currentRoom, isTyping: false });
+            }
             typingTimeout = null;
         }, 800);
     });
@@ -255,6 +300,26 @@ const initializeEventListeners = () => {
             e.preventDefault();
             const name = nameInput.value;
             handleNewUser(name);
+        }
+    });
+
+    // Creative name suggestions
+    document.addEventListener('click', (e) => {
+        if (e.target.classList.contains('suggestion-chip')) {
+            const suggestedName = e.target.dataset.name;
+            nameInput.value = suggestedName;
+            nameInput.focus();
+            
+            // Add visual feedback
+            e.target.style.background = 'var(--primary-color)';
+            e.target.style.color = 'white';
+            e.target.style.borderColor = 'var(--primary-color)';
+            
+            setTimeout(() => {
+                e.target.style.background = '';
+                e.target.style.color = '';
+                e.target.style.borderColor = '';
+            }, 300);
         }
     });
 
@@ -309,10 +374,12 @@ const initializeSocketHandlers = () => {
 
     socket.on('user-joined', (name) => {
         appendMessage(`${name} joined the chat`, 'system');
+        showNotification(`${name} joined the chat`, 'info');
     });
 
     socket.on('user-left', (name) => {
         appendMessage(`${name} left the chat`, 'system');
+        showNotification(`${name} left the chat`, 'info');
     });
 
     socket.on('typing-start', (name) => {
@@ -332,10 +399,10 @@ const initializeSocketHandlers = () => {
         updateMessageReactions(data.messageId, data.reactions);
     });
 
-
-
     socket.on('error', (error) => {
+        console.error('Server error:', error);
         appendMessage(`Error: ${error}`, 'system');
+        showNotification(error, 'error');
     });
 };
 
@@ -346,7 +413,16 @@ const handleFileUpload = (event) => {
     // Check file size (limit to 5MB)
     const maxSize = 5 * 1024 * 1024; // 5MB
     if (file.size > maxSize) {
-        alert('File size too large. Please select a file smaller than 5MB.');
+        showNotification('File size too large. Please select a file smaller than 5MB.', 'error');
+        event.target.value = '';
+        return;
+    }
+    
+    // Validate file type
+    const allowedTypes = ['image/', 'video/', 'audio/', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/'];
+    const isAllowedType = allowedTypes.some(type => file.type.startsWith(type));
+    if (!isAllowedType) {
+        showNotification('File type not allowed. Please select a valid file.', 'error');
         event.target.value = '';
         return;
     }
@@ -364,7 +440,7 @@ const handleFileUpload = (event) => {
     };
     
     reader.onerror = () => {
-        alert('Error reading file. Please try again.');
+        showNotification('Error reading file. Please try again.', 'error');
         event.target.value = '';
     };
     
@@ -393,7 +469,7 @@ const updateUserList = (userList) => {
             const isTyping = typingUsers.has(user.name);
             return `
                 <div class="user-item ${user.isOnline ? 'online' : 'offline'} ${isTyping ? 'typing' : ''}" data-user-id="${user.id}">
-                    <img src="${user.avatar}" alt="${user.name}" class="user-avatar">
+                    <img src="${user.avatar}" alt="${user.name}" class="user-avatar" onerror="this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=default'">
                     <div class="user-info">
                         <span class="user-name">${user.name}</span>
                         <span class="user-status">
@@ -425,11 +501,12 @@ const toggleSidebar = () => {
     localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
 };
 
-
-
-
-
-
+// Sanitize HTML to prevent XSS
+const sanitizeHTML = (str) => {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+};
 
 const appendMessage = (messageData, position) => {
     const messageElement = document.createElement('div');
@@ -437,7 +514,7 @@ const appendMessage = (messageData, position) => {
     
     if (typeof messageData === 'string') {
         // System message
-        messageElement.innerHTML = `<div class="message-content">${messageData}</div>`;
+        messageElement.innerHTML = `<div class="message-content">${sanitizeHTML(messageData)}</div>`;
     } else {
         // Regular message
         messageElement.dataset.messageId = messageData.id;
@@ -447,24 +524,24 @@ const appendMessage = (messageData, position) => {
         
         const content = `
             <div class="message-header">
-                <img src="${messageData.sender?.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=default'}" alt="${senderName}" class="message-avatar">
-                <span class="message-sender">${senderName}</span>
+                <img src="${messageData.sender?.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=default'}" alt="${sanitizeHTML(senderName)}" class="message-avatar" onerror="this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=default'">
+                <span class="message-sender">${sanitizeHTML(senderName)}</span>
                 <span class="message-time">${timestamp}</span>
             </div>
             <div class="message-content">
-                ${messageData.replyTo ? `<div class="reply-to">Replying to: ${messageData.replyTo}</div>` : ''}
+                ${messageData.replyTo ? `<div class="reply-to">Replying to: ${sanitizeHTML(messageData.replyTo)}</div>` : ''}
                 ${messageData.file ? `
                     <div class="file-message">
                         <div class="file-info">
-                            <span class="file-name">${messageData.file.name}</span>
+                            <span class="file-name">${sanitizeHTML(messageData.file.name)}</span>
                             <span class="file-size">${formatFileSize(messageData.file.size)}</span>
                         </div>
                         ${messageData.file.type.startsWith('image/') ? 
-                            `<img src="${messageData.file.data}" alt="${messageData.file.name}" class="file-preview">` :
+                            `<img src="${messageData.file.data}" alt="${sanitizeHTML(messageData.file.name)}" class="file-preview">` :
                             `<div class="file-icon">📎</div>`
                         }
                     </div>
-                ` : messageData.message}
+                ` : sanitizeHTML(messageData.message)}
             </div>
             <div class="message-reactions" id="reactions-${messageData.id}"></div>
             ${!isOwnMessage ? `<button class="react-btn" onclick="showReactionPanel('${messageData.id}')">😊</button>` : ''}
@@ -476,13 +553,18 @@ const appendMessage = (messageData, position) => {
     if (messageContainer) {
         messageContainer.appendChild(messageElement);
         
+        // Add animation class after a small delay
+        setTimeout(() => {
+            messageElement.classList.add('show');
+        }, 10);
+        
         // Scroll to bottom
         messageContainer.scrollTop = messageContainer.scrollHeight;
     } else {
         console.error('Message container not found!');
     }
     
-    // Play sound for incoming messages
+    // Play sound for incoming messages with error handling
     if (position === 'left' && audio) {
         audio.play().catch(error => {
             console.warn('Audio playback failed:', error);
@@ -519,7 +601,9 @@ const hideReactionPanel = () => {
 };
 
 const addReaction = (messageId, reaction) => {
-    socket.emit('reaction', { messageId, reaction, roomId: currentRoom });
+    if (isConnected) {
+        socket.emit('reaction', { messageId, reaction, roomId: currentRoom });
+    }
     hideReactionPanel();
 };
 
@@ -627,6 +711,7 @@ const sendMessage = (message, additionalData = {}) => {
     
     if (!isConnected) {
         appendMessage('Not connected to server. Please wait...', 'system');
+        showNotification('Not connected to server. Please wait for reconnection.', 'error');
         return;
     }
     
@@ -644,7 +729,9 @@ const sendMessage = (message, additionalData = {}) => {
         clearTimeout(typingTimeout);
         typingTimeout = null;
     }
-    socket.emit('typing', { roomId: currentRoom, isTyping: false });
+    if (isConnected) {
+        socket.emit('typing', { roomId: currentRoom, isTyping: false });
+    }
 };
 
 // Modal functionality
@@ -699,25 +786,112 @@ const hideModal = () => {
 const handleNewUser = (name) => {
     const trimmedName = name.trim();
     if (!trimmedName) {
-        alert('Please enter a valid name.');
+        showNotification('Please enter a valid name.', 'error');
         return;
     }
     
     if (trimmedName.length < 2) {
-        alert('Name must be at least 2 characters long.');
+        showNotification('Name must be at least 2 characters long.', 'error');
         return;
     }
     
     if (trimmedName.length > 20) {
-        alert('Name must be less than 20 characters.');
+        showNotification('Name must be less than 20 characters.', 'error');
         return;
     }
     
     currentUser = { name: trimmedName, id: socket.id };
     socket.emit('new-user-joined', trimmedName);
     hideModal();
+    showNotification(`Welcome, ${trimmedName}! You're now connected.`, 'success');
+};
+
+// Emoji picker functionality
+const showEmojiPicker = () => {
+    const emojis = ['😊', '😂', '❤️', '👍', '🎉', '🔥', '💯', '✨', '🚀', '💪', '👏', '🙌', '🤔', '😎', '🥳', '😍', '🤩', '😄', '😅', '😆'];
+    
+    // Create emoji picker panel
+    let emojiPanel = document.getElementById('emojiPanel');
+    if (!emojiPanel) {
+        emojiPanel = document.createElement('div');
+        emojiPanel.id = 'emojiPanel';
+        emojiPanel.className = 'emoji-panel';
+        emojiPanel.innerHTML = `
+            <div class="emoji-grid">
+                ${emojis.map(emoji => `<button class="emoji-btn" data-emoji="${emoji}">${emoji}</button>`).join('')}
+            </div>
+        `;
+        document.body.appendChild(emojiPanel);
+        
+        // Add event listeners
+        emojiPanel.addEventListener('click', (e) => {
+            if (e.target.classList.contains('emoji-btn')) {
+                const emoji = e.target.dataset.emoji;
+                messageInput.value += emoji;
+                messageInput.focus();
+                hideEmojiPicker();
+            }
+        });
+    }
+    
+    // Position and show emoji panel
+    const emojiButton = document.querySelector('.emoji-btn');
+    const rect = emojiButton.getBoundingClientRect();
+    emojiPanel.style.left = rect.left + 'px';
+    emojiPanel.style.top = (rect.top - 200) + 'px';
+    emojiPanel.style.display = 'block';
+    
+    // Hide when clicking outside
+    setTimeout(() => {
+        document.addEventListener('click', hideEmojiPicker);
+    }, 100);
+};
+
+const hideEmojiPicker = () => {
+    const emojiPanel = document.getElementById('emojiPanel');
+    if (emojiPanel) {
+        emojiPanel.style.display = 'none';
+    }
+    document.removeEventListener('click', hideEmojiPicker);
+};
+
+// Enhanced welcome message with modern styling
+const showWelcomeMessage = () => {
+    setTimeout(() => {
+        appendMessage('Welcome to ChatFlow! 🚀 Start typing to connect with others in real-time.', 'system');
+    }, 500);
+};
+
+// Show notification
+const showNotification = (message, type = 'info') => {
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.innerHTML = `
+        <div class="notification-content">
+            <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+            <span>${message}</span>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Animate in
+    setTimeout(() => {
+        notification.classList.add('show');
+    }, 10);
+    
+    // Remove after 3 seconds
+    setTimeout(() => {
+        notification.classList.remove('show');
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 300);
+    }, 3000);
 };
 
 // Make functions globally available for onclick handlers
 window.toggleSidebar = toggleSidebar;
 window.showReactionPanel = showReactionPanel;
+window.showEmojiPicker = showEmojiPicker;
