@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Chat App- Using Node Socket.io</title>
+    <script defer src="/socket.io/socket.io.js"></script>
+    <script defer src="js/client.js"></script>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <div class="chat-box">
+        <nav>
+            <img src="https://cdn-icons-png.flaticon.com/512/1239/1239020.png" alt="icon" class="logo">
+            <h1>Welcome to My Chat App</h1>
+        </nav>
+        <div class="container">
+            <!-- Messages will be added here dynamically -->
+        </div>
+
+        <div class="send">
+            <form action="#" id="send-container">
+                <input type="text" name="messageInp" id="messageInp" placeholder="Type your message...">
+                <button class="btn" type="submit">Send</button>
+            </form>
+        </div>
+    </div>
+</body>
+
+</html>

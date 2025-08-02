@@ -1,7 +1,18 @@
 {
+  "name": "chatapp2",
+  "version": "1.0.0",
+  "description": "A real-time chat application using Node.js and Socket.io",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node server/index.js"
+  },
   "dependencies": {
     "express": "^4.18.2",
     "open": "^10.0.2",
     "socket.io": "^4.7.2"
-  }
+  },
+  "keywords": ["chat", "socket.io", "real-time", "node.js"],
+  "author": "",
+  "license": "MIT"
 }
