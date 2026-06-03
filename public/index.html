@@ -5,39 +5,40 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Modern Chat App - Real-time Messaging</title>
+    <meta name="color-scheme" content="light dark">
+    <title>ChatFlow — Real-time Messaging</title>
     <script defer src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script defer src="js/client.js"></script>
     <link rel="stylesheet" href="css/style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 
 <body>
-    <!-- Name Input Modal -->
-    <div id="nameModal" class="modal" style="display: flex;">
+    <div id="nameModal" class="modal" aria-modal="true" role="dialog" aria-labelledby="modalTitle">
         <div class="modal-content">
             <div class="modal-header">
-                <div class="modal-logo-container">
-                    <i class="fas fa-comments"></i>
+                <div class="modal-logo">
+                    <i class="fas fa-comments" aria-hidden="true"></i>
                 </div>
-                <h2>Welcome to ChatFlow</h2>
-                <p class="modal-subtitle">Connect with others in real-time</p>
+                <h2 id="modalTitle">Welcome to ChatFlow</h2>
+                <p class="modal-subtitle">Pick a name and start chatting</p>
             </div>
             <div class="modal-body">
-                <form id="nameForm">
+                <form id="nameForm" novalidate>
                     <div class="input-group">
-                        <label for="nameInput">Choose your display name</label>
-                        <input type="text" id="nameInput" placeholder="Enter your name..." required autocomplete="off">
-                        <div class="input-icon">
-                            <i class="fas fa-user"></i>
+                        <label for="nameInput">Display name</label>
+                        <div class="field">
+                            <i class="fas fa-user field-icon" aria-hidden="true"></i>
+                            <input type="text" id="nameInput" placeholder="Your name" required autocomplete="off"
+                                   minlength="2" maxlength="20" spellcheck="false">
                         </div>
                     </div>
-                    
+
                     <div class="name-suggestions">
-                        <p>Or pick a creative name:</p>
+                        <p>Need inspiration?</p>
                         <div class="suggestion-chips">
                             <button type="button" class="suggestion-chip" data-name="Cosmic Explorer">Cosmic Explorer</button>
                             <button type="button" class="suggestion-chip" data-name="Pixel Dreamer">Pixel Dreamer</button>
@@ -45,63 +46,86 @@
                             <button type="button" class="suggestion-chip" data-name="Quantum Coder">Quantum Coder</button>
                             <button type="button" class="suggestion-chip" data-name="Digital Nomad">Digital Nomad</button>
                             <button type="button" class="suggestion-chip" data-name="Cyber Poet">Cyber Poet</button>
-                            <button type="button" class="suggestion-chip" data-name="Stellar Artist">Stellar Artist</button>
-                            <button type="button" class="suggestion-chip" data-name="Mystic Developer">Mystic Developer</button>
                         </div>
                     </div>
-                    
+
                     <button type="submit" class="modal-btn">
-                        <span>Start Chatting</span>
-                        <i class="fas fa-arrow-right"></i>
+                        <span>Start chatting</span>
+                        <i class="fas fa-arrow-right" aria-hidden="true"></i>
                     </button>
                 </form>
             </div>
         </div>
     </div>
 
-    <div class="chat-box" id="chatBox" style="display: none;">
+    <div class="chat-box" id="chatBox" hidden>
         <nav>
             <div class="nav-left">
-                <div class="logo-container">
-                    <i class="fas fa-comments"></i>
+                <div class="logo">
+                    <i class="fas fa-comments" aria-hidden="true"></i>
                 </div>
                 <h1>ChatFlow</h1>
             </div>
             <div class="nav-right">
-                <span class="connection-status">🟢 Connected</span>
+                <button type="button" class="theme-toggle" id="themeToggle" title="Toggle theme" aria-label="Toggle theme">
+                    <i class="fas fa-moon" aria-hidden="true"></i>
+                </button>
+                <span class="connection-status" id="connectionStatus" aria-live="polite">
+                    <span class="status-dot" aria-hidden="true"></span>
+                    <span class="status-label">Connecting…</span>
+                </span>
             </div>
         </nav>
-        
+
         <div class="main-content">
-            <!-- Sidebar will be dynamically added here by JavaScript -->
-            
-            <div class="chat-area">
-                <div class="container">
-                    <!-- Messages will be added here dynamically -->
+            <aside class="sidebar" id="sidebar">
+                <div class="sidebar-header">
+                    <h3>People</h3>
+                    <span class="online-count" id="onlineCount">0 online</span>
+                </div>
+                <div class="user-list" id="userList"></div>
+                <div class="sidebar-typing" id="sidebarTyping" hidden>
+                    <span class="typing-dots"><i></i><i></i><i></i></span>
+                    <span class="typing-text">Someone is typing…</span>
+                </div>
+            </aside>
+
+            <button type="button" class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar (Ctrl+B)" aria-label="Toggle sidebar">
+                <i class="fas fa-chevron-left" aria-hidden="true"></i>
+            </button>
+
+            <section class="chat-area">
+                <div class="container" id="messageContainer" role="log" aria-live="polite"></div>
+
+                <div class="typing-indicator" id="typingIndicator" hidden>
+                    <span class="typing-dots"><i></i><i></i><i></i></span>
+                    <span class="typing-text"></span>
                 </div>
 
                 <div class="send">
-                    <form action="#" id="send-container">
+                    <form id="send-container" autocomplete="off">
                         <div class="input-wrapper">
-                            <input type="text" name="messageInp" id="messageInp" placeholder="Type your message..." autocomplete="off">
+                            <input type="text" name="messageInp" id="messageInp" placeholder="Type a message…" autocomplete="off" maxlength="2000">
                             <div class="input-actions">
-                                <button type="button" class="action-btn emoji-btn" title="Add emoji">
-                                    <i class="far fa-smile"></i>
+                                <button type="button" class="action-btn" id="emojiButton" title="Add emoji" aria-label="Add emoji">
+                                    <i class="far fa-smile" aria-hidden="true"></i>
                                 </button>
-                                <button type="button" class="action-btn file-btn" title="Attach file">
-                                    <i class="fas fa-paperclip"></i>
+                                <button type="button" class="action-btn" id="fileButton" title="Attach file" aria-label="Attach file">
+                                    <i class="fas fa-paperclip" aria-hidden="true"></i>
                                 </button>
                             </div>
                         </div>
-                        <button class="btn" type="submit">
+                        <button class="btn" type="submit" aria-label="Send message">
+                            <i class="fas fa-paper-plane" aria-hidden="true"></i>
                             <span>Send</span>
-                            <i class="fas fa-paper-plane"></i>
                         </button>
                     </form>
                 </div>
-            </div>
+            </section>
         </div>
     </div>
+
+    <div id="notificationStack" class="notification-stack" aria-live="polite" aria-atomic="false"></div>
 </body>
 
 </html>

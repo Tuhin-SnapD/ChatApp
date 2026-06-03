@@ -28,15 +28,11 @@ const rooms = {
 const typingUsers = new Map();
 const messageReactions = new Map();
 
-// Improved sanitization function
-const sanitizeInput = (input) => {
+// Trim and bound user input; the client always renders via textContent,
+// so we don't need to HTML-escape (that would surface literal entities).
+const sanitizeInput = (input, maxLen = 2000) => {
   if (typeof input !== 'string') return '';
-  return input
-    .replace(/[<>]/g, '')
-    .replace(/&/g, '&amp;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#x27;')
-    .trim();
+  return input.trim().slice(0, maxLen);
 };
 
 const handleNewUserJoined = (socket, name) => {
